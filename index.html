@@ -41,11 +41,22 @@
     #login-screen { text-align: center; padding: 40px 20px; }
     #app-screen { display: none; }
     #user-info { text-align: right; margin-bottom: 20px; font-size: 14px; }
+    #matrizConsumo table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    #matrizConsumo th, #matrizConsumo td { border: 1px solid #ddd; padding: 8px; text-align: center; vertical-align: middle;}
+    #matrizConsumo th { background-color: var(--gray-light); font-size: 14px; }
+    #matrizConsumo input { width: 70px; text-align: center; border-radius: 6px; padding: 5px; border: 1px solid #ccc; }
+    #matrizConsumo input.locked { background-color: #e9ecef; border-color: var(--primary-color); font-weight: bold; }
+    .lock-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 0 5px; vertical-align: middle; }
+    #matrizConsumo .subtotal-col { font-weight: bold; background-color: #eef7ff; }
+    #matrizConsumo tfoot td { font-size: 1.1em; font-weight: bold; }
+    .catalog-list { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
+    .catalog-item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #eee; }
+    .delete-btn { color: var(--danger-color); cursor: pointer; }
   </style>
 </head>
 <body>
 
-  <!-- Ecrã de Login https://console.firebase.google.com/project/divisor-de-conta-boteco/overview ---- project-650578405698 -->
+  <!-- Ecrã de Login -->
   <div id="login-screen" class="container">
     <h1>Bem-vindo ao Divisor de Conta Buteco</h1>
     <p>Faça login para guardar as suas contas e aceder de qualquer lugar.</p>
@@ -65,7 +76,6 @@
     <h1>Divisão de Conta no Buteco 🍻</h1>
     <button class="button gray" onclick="limparConta()">🗑️ Limpar Conta e Começar de Novo</button>
 
-    <!-- O resto da aplicação (seções 1, 2, 3, 4, etc.) vai aqui -->
     <div class="section-title">
         <span>1. Adicione Itens à Conta</span>
         <button class="button blue" style="padding: 5px 10px; font-size: 14px;" onclick="abrirModalCadastroProdutos()">⚙️ Gerir Produtos</button>
@@ -100,11 +110,81 @@
     <div class="total" id="resultado"></div>
   </div>
 
-  <!-- MODAIS (código dos modais aqui) -->
-  <div id="modalProduto" class="modal"> <!-- ... --> </div>
-  <div id="modalPessoa" class="modal"> <!-- ... --> </div>
-  <div id="modalCadastroProdutos" class="modal"> <!-- ... --> </div>
-  <div id="modalConsumo" class="modal"> <!-- ... --> </div>
+  <!-- MODAIS -->
+  <div id="modalProduto" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="fecharModal('modalProduto')">&times;</span>
+      <h2 id="modalProdutoTitulo">Adicionar Produto</h2>
+      <form onsubmit="event.preventDefault(); salvarProduto();">
+        <input type="hidden" id="produtoEditIndex">
+        <input type="hidden" id="produtoCategoria">
+        <div class="form-group">
+          <label for="produtoNomeSelect">Produto</label>
+          <select id="produtoNomeSelect" onchange="verificarProdutoOutro()"></select>
+        </div>
+        <div class="form-group" id="produtoNomeOutroContainer" style="display:none;">
+          <label for="produtoNomeOutro">Nome do Produto</label>
+          <input type="text" id="produtoNomeOutro">
+        </div>
+        <div class="form-group">
+          <label for="produtoQuantidade">Quantidade</label>
+          <input type="number" id="produtoQuantidade" value="1" min="1" required>
+        </div>
+        <div class="form-group">
+          <label for="produtoPreco">Preço Unitário (R$)</label>
+          <input type="number" id="produtoPreco" step="0.01" min="0" required>
+        </div>
+        <button type="submit" class="button green" style="width:100%;">Salvar Produto</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modalPessoa" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="fecharModal('modalPessoa')">&times;</span>
+      <h2 id="modalPessoaTitulo">Adicionar Pessoa</h2>
+      <form onsubmit="event.preventDefault(); salvarPessoa();">
+        <input type="hidden" id="pessoaEditIndex">
+        <div class="form-group">
+          <label for="pessoaNome">Nome da Pessoa</label>
+          <input type="text" id="pessoaNome" required>
+        </div>
+        <button type="submit" class="button green" style="width:100%;">Salvar Pessoa</button>
+      </form>
+    </div>
+  </div>
+  
+  <div id="modalCadastroProdutos" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="fecharModal('modalCadastroProdutos')">&times;</span>
+      <h2>Gerir Produtos Cadastrados</h2>
+      <div class="form-group">
+        <label for="catalogoCategoriaSelect">Selecione a Categoria</label>
+        <select id="catalogoCategoriaSelect" onchange="renderizarCatalogoNoModal()"></select>
+      </div>
+      <div class="catalog-list" id="catalogoLista"></div>
+      <div class="form-group" style="margin-top: 15px;">
+        <label for="novoProdutoCatalogo">Adicionar Novo Produto à Categoria</label>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="novoProdutoCatalogo" placeholder="Nome do novo produto">
+          <button class="button green" onclick="adicionarAoCatalogo()">Adicionar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="modalConsumo" class="modal">
+    <div class="modal-content wide">
+      <span class="close-button" onclick="fecharModal('modalConsumo')">&times;</span>
+      <h2>Detalhar Consumo por Pessoa</h2>
+      <div class="modo-consumo-toggle">
+        <label><input type="radio" name="modoConsumoInterno" value="item" checked onchange="trocarModoConsumo('item')"> Dividir por Item (Qtd)</label>
+        <label><input type="radio" name="modoConsumoInterno" value="valor" onchange="trocarModoConsumo('valor')"> Dividir por Valor (R$)</label>
+      </div>
+      <div id="matrizConsumo" style="overflow-x: auto;"></div>
+      <button class="button green" onclick="processarDivisaoPorConsumo()" style="width: 100%; margin-top: 20px;">Confirmar Divisão</button>
+    </div>
+  </div>
 
   <!-- Scripts do Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -113,19 +193,15 @@
 
   <script>
     // --- IMPORTANTE: Configuração do Firebase ---
-    // Para obter estas chaves, crie um projeto GRATUITO em https://firebase.google.com/
-    // 1. Crie um projeto.
-    // 2. Vá para "Configurações do projeto" (ícone de engrenagem).
-    // 3. Em "Seus apps", clique no ícone da web (</>) para criar um app da web.
-    // 4. Copie o objeto `firebaseConfig` e cole aqui.
+    // Substitua o objeto abaixo pelas chaves do seu projeto no Firebase
     const firebaseConfig = {
-    apiKey: "AIzaSyAVXenw-uD-pvNGdZqcU6fvaZeqNiW3qQA",
-    authDomain: "divisor-de-conta-boteco.firebaseapp.com",
-    projectId: "divisor-de-conta-boteco",
-    storageBucket: "divisor-de-conta-boteco.firebasestorage.app",
-    messagingSenderId: "650578405698",
-    appId: "1:650578405698:web:354af978807a76e72140db",
-    measurementId: "G-X2CYSZLNSG"
+      apiKey: "AIzaSyAVXenw-uD-pvNGdZqcU6fvaZeqNiW3qQA",
+      authDomain: "divisor-de-conta-boteco.firebaseapp.com",
+      projectId: "divisor-de-conta-boteco",
+      storageBucket: "divisor-de-conta-boteco.firebasestorage.app",
+      messagingSenderId: "650578405698",
+      appId: "1:650578405698:web:354af978807a76e72140db",
+      measurementId: "G-X2CYSZLNSG"
     };
 
     // Inicialização do Firebase
@@ -141,29 +217,22 @@
     const logoutBtn = document.getElementById('logout-btn');
     const userNameEl = document.getElementById('user-name');
 
-    // Observador de estado de autenticação
     auth.onAuthStateChanged(user => {
         if (user) {
-            // Utilizador está logado
             currentUser = user;
             loginScreen.style.display = 'none';
             appScreen.style.display = 'block';
             userNameEl.textContent = `Olá, ${user.displayName || user.email}!`;
-            carregarDados(); // Carrega os dados do Firestore
+            carregarDados();
         } else {
-            // Utilizador está desligado
             currentUser = null;
             loginScreen.style.display = 'block';
             appScreen.style.display = 'none';
-            // Limpa os dados da tela
-            produtos = [];
-            pessoas = [];
-            renderProdutos();
-            renderPessoas();
+            produtos = []; pessoas = [];
+            renderProdutos(); renderPessoas();
         }
     });
 
-    // Evento de clique para login
     loginBtn.addEventListener('click', () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => {
@@ -172,10 +241,7 @@
         });
     });
 
-    // Evento de clique para logout
-    logoutBtn.addEventListener('click', () => {
-        auth.signOut();
-    });
+    logoutBtn.addEventListener('click', () => { auth.signOut(); });
 
     // --- GRUPO 1: PERSISTÊNCIA DE DADOS COM FIRESTORE ---
     async function salvarDados() {
@@ -186,10 +252,8 @@
                 produtos: produtos,
                 pessoas: pessoas,
                 catalogo: itensPorCategoria
-            }, { merge: true }); // merge: true para não sobrescrever outros campos
-        } catch (error) {
-            console.error("Erro ao guardar dados:", error);
-        }
+            }, { merge: true });
+        } catch (error) { console.error("Erro ao guardar dados:", error); }
     }
 
     async function carregarDados() {
@@ -203,35 +267,474 @@
                 pessoas = data.pessoas || [];
                 itensPorCategoria = data.catalogo || JSON.parse(JSON.stringify(defaultItens));
             } else {
-                // Se o utilizador não tem dados, usa os padrões
-                produtos = [];
-                pessoas = [];
+                produtos = []; pessoas = [];
                 itensPorCategoria = JSON.parse(JSON.stringify(defaultItens));
             }
             renderizarBotoesCategoria();
             renderProdutos();
             renderPessoas();
-        } catch (error) {
-            console.error("Erro ao carregar dados:", error);
-        }
+        } catch (error) { console.error("Erro ao carregar dados:", error); }
     }
     
-    // As funções `salvarCatalogo` e `carregarCatalogo` são agora parte de `salvarDados` e `carregarDados`.
-    // A função `limparConta` agora limpa os dados e guarda esse estado vazio.
     async function limparConta() {
         if (confirm("Tem certeza que deseja limpar todos os dados da conta? Essa ação não pode ser desfeita.")) {
             produtos = []; pessoas = []; resetarMemoria();
-            await salvarDados(); // Guarda o estado vazio na nuvem
+            await salvarDados();
             renderProdutos(); renderPessoas(); document.getElementById('resultado').innerHTML = '';
         }
     }
 
-    // --- O RESTANTE DO CÓDIGO (GRUPOS 2, 3, 4, 5) PERMANECE O MESMO DA VERSÃO ANTERIOR ---
-    // A única mudança é que `salvarDados()` é chamado no final das funções que modificam os dados,
-    // e ele agora guarda na nuvem em vez de no localStorage.
+    // --- GRUPO 2: LÓGICA DE MODAIS E ENTRADA DE DADOS ---
+    function fecharModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
     
-    // (Cole aqui o código completo dos Grupos 2, 3, 4 e 5 da resposta anterior)
+    function abrirModalProduto(index, categoria) {
+        const modal = document.getElementById('modalProduto');
+        const titulo = document.getElementById('modalProdutoTitulo');
+        document.getElementById('produtoEditIndex').value = index !== null ? index : '';
+        document.getElementById('produtoCategoria').value = categoria || (index !== null ? produtos[index].categoria : '');
+        
+        const catAtual = document.getElementById('produtoCategoria').value;
+        const select = document.getElementById('produtoNomeSelect');
+        select.innerHTML = `<option value="">Selecione um produto</option>`;
+        (itensPorCategoria[catAtual] || []).forEach(item => {
+            select.innerHTML += `<option value="${item}">${item}</option>`;
+        });
+        select.innerHTML += `<option value="outro">Outro...</option>`;
+
+        if (index !== null) {
+            titulo.innerText = 'Editar Produto';
+            const produto = produtos[index];
+            if (itensPorCategoria[catAtual] && itensPorCategoria[catAtual].includes(produto.nome)) {
+                select.value = produto.nome;
+                verificarProdutoOutro(false);
+            } else {
+                select.value = 'outro';
+                verificarProdutoOutro(true);
+                document.getElementById('produtoNomeOutro').value = produto.nome;
+            }
+            document.getElementById('produtoQuantidade').value = produto.quantidade;
+            document.getElementById('produtoPreco').value = produto.precoUnitario.toFixed(2);
+        } else {
+            titulo.innerText = `Adicionar ${categoria}`;
+            document.getElementById('modalProduto').querySelector('form').reset();
+            verificarProdutoOutro(false);
+        }
+        modal.style.display = 'block';
+    }
+
+    function verificarProdutoOutro(forceShow = null) {
+        const select = document.getElementById('produtoNomeSelect');
+        const container = document.getElementById('produtoNomeOutroContainer');
+        const show = forceShow !== null ? forceShow : select.value === 'outro';
+        container.style.display = show ? 'block' : 'none';
+        document.getElementById('produtoNomeOutro').required = show;
+    }
+
+    function salvarProduto() {
+        const index = document.getElementById('produtoEditIndex').value;
+        const categoria = document.getElementById('produtoCategoria').value;
+        const nomeSelect = document.getElementById('produtoNomeSelect').value;
+        const nome = (nomeSelect === 'outro') ? document.getElementById('produtoNomeOutro').value : nomeSelect;
+        const quantidade = parseInt(document.getElementById('produtoQuantidade').value);
+        const precoUnitario = parseFloat(document.getElementById('produtoPreco').value);
+
+        if (!nome || isNaN(quantidade) || isNaN(precoUnitario)) { alert("Por favor, preencha todos os campos corretamente."); return; }
+        
+        const produtoData = { nome, quantidade, precoUnitario, categoria };
+        if (index !== '') {
+            produtos[index] = produtoData;
+        } else {
+            produtos.push(produtoData);
+        }
+        resetarMemoria();
+        renderProdutos();
+        salvarDados();
+        fecharModal('modalProduto');
+    }
     
+    function abrirModalPessoa(index = null) {
+        const modal = document.getElementById('modalPessoa');
+        const titulo = document.getElementById('modalPessoaTitulo');
+        document.getElementById('pessoaEditIndex').value = index !== null ? index : '';
+        if (index !== null) {
+            titulo.innerText = 'Editar Nome da Pessoa';
+            document.getElementById('pessoaNome').value = pessoas[index].nome;
+        } else {
+            titulo.innerText = 'Adicionar Pessoa';
+            document.getElementById('modalPessoa').querySelector('form').reset();
+        }
+        modal.style.display = 'block';
+    }
+
+    function salvarPessoa() {
+        const index = document.getElementById('pessoaEditIndex').value;
+        const nome = document.getElementById('pessoaNome').value;
+        if (!nome) { alert("O nome não pode ser vazio."); return; }
+        if (index !== '') {
+            pessoas[index].nome = nome;
+        } else {
+            pessoas.push({ nome, total: 0 });
+        }
+        resetarMemoria();
+        renderPessoas();
+        salvarDados();
+        fecharModal('modalPessoa');
+    }
+
+    function removerPessoa(index) {
+        if (confirm(`Tem certeza que deseja remover ${pessoas[index].nome}?`)) {
+            resetarMemoria();
+            pessoas.splice(index, 1);
+            renderPessoas();
+            salvarDados();
+        }
+    }
+
+    function abrirModalCadastroProdutos() {
+        const select = document.getElementById('catalogoCategoriaSelect');
+        select.innerHTML = '';
+        Object.keys(itensPorCategoria).forEach(cat => {
+            select.innerHTML += `<option value="${cat}">${cat}</option>`;
+        });
+        renderizarCatalogoNoModal();
+        document.getElementById('modalCadastroProdutos').style.display = 'block';
+    }
+
+    function renderizarCatalogoNoModal() {
+        const categoriaSelecionada = document.getElementById('catalogoCategoriaSelect').value;
+        const listaDiv = document.getElementById('catalogoLista');
+        listaDiv.innerHTML = '';
+        (itensPorCategoria[categoriaSelecionada] || []).forEach((item, index) => {
+            listaDiv.innerHTML += `<div class="catalog-item"><span>${item}</span><span class="delete-btn" onclick="removerDoCatalogo('${categoriaSelecionada}', ${index})">❌</span></div>`;
+        });
+    }
+
+    function adicionarAoCatalogo() {
+        const categoria = document.getElementById('catalogoCategoriaSelect').value;
+        const input = document.getElementById('novoProdutoCatalogo');
+        const nomeNovoProduto = input.value.trim();
+        if (nomeNovoProduto && !(itensPorCategoria[categoria] || []).includes(nomeNovoProduto)) {
+            if (!itensPorCategoria[categoria]) itensPorCategoria[categoria] = [];
+            itensPorCategoria[categoria].push(nomeNovoProduto);
+            salvarDados();
+            renderizarCatalogoNoModal();
+            input.value = '';
+        }
+    }
+
+    function removerDoCatalogo(categoria, index) {
+        itensPorCategoria[categoria].splice(index, 1);
+        salvarDados();
+        renderizarCatalogoNoModal();
+    }
+
+    // --- GRUPO 3: RENDERIZAÇÃO DA UI PRINCIPAL ---
+    function renderizarBotoesCategoria() {
+        const container = document.querySelector('.grid-categorias');
+        container.innerHTML = '';
+        const cores = ['yellow', 'red', 'blue', 'green', 'teal', 'orange'];
+        let corIndex = 0;
+        Object.keys(itensPorCategoria).forEach(cat => {
+            container.innerHTML += `<button class="button ${cores[corIndex % cores.length]}" onclick="abrirModalProduto(null, '${cat}')">${cat}</button>`;
+            corIndex++;
+        });
+    }
+    
+    function renderProdutos() {
+        const div = document.getElementById('produtos');
+        if (produtos.length === 0) {
+            div.innerHTML = '<p>Nenhum produto adicionado ainda.</p>';
+            return;
+        }
+        let subtotal = 0;
+        const itensHtml = produtos.map((p, i) => {
+            const totalItem = p.quantidade * p.precoUnitario;
+            subtotal += totalItem;
+            return `<div class="list-item produto-item"><span><strong>Item ${i+1}</strong>: [${p.categoria}] ${p.nome} - ${p.quantidade}x R$ ${p.precoUnitario.toFixed(2)} = <strong>R$ ${totalItem.toFixed(2)}</strong></span><div><button onclick="abrirModalProduto(${i})">✏️</button> <button onclick="removerProduto(${i})">❌</button></div></div>`;
+        }).join('');
+        const subtotalHtml = `<div class="subtotal-produtos">Subtotal dos Produtos: R$ ${subtotal.toFixed(2)}</div>`;
+        div.innerHTML = itensHtml + subtotalHtml;
+    }
+    
+    function renderPessoas() {
+        const div = document.getElementById('pessoas');
+        div.innerHTML = pessoas.length > 0 ? pessoas.map((p, i) => `<div class="list-item pessoa-item"><span>👤 ${p.nome}</span><div><button onclick="abrirModalPessoa(${i})">✏️</button> <button onclick="removerPessoa(${i})">❌</button></div></div>`).join('') : '<p>Nenhuma pessoa adicionada ainda.</p>';
+    }
+    
+    function mostrarBotoesRapidos() {
+        const div = document.getElementById('botoesRapidos');
+        div.innerHTML = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '+'].map(n => `<button class="button green" onclick="adicionarPessoaRapido('${n}')" style="padding:10px 15px; margin: 2px;">${n}</button>`).join(' ');
+    }
+    
+    function adicionarPessoaRapido(n) {
+        resetarMemoria();
+        let numero;
+        if (n === '+') {
+            numero = parseInt(prompt('Quantas pessoas a mais?'));
+            if (isNaN(numero) || numero <= 0) return;
+        } else {
+            numero = parseInt(n);
+            pessoas = [];
+        }
+        for (let i = 0; i < numero; i++) {
+            pessoas.push({ nome: `Pessoa ${pessoas.length + 1}`, total: 0 });
+        }
+        renderPessoas();
+        document.getElementById('botoesRapidos').innerHTML = '';
+        salvarDados();
+    }
+
+    // --- GRUPO 4: LÓGICA DO MODAL DE CONSUMO ---
+    function toggleLock(buttonElement, pIndex, prodIndex) {
+        const inputId = `consumo-p${pIndex}-i${prodIndex}`;
+        const inputElement = document.getElementById(inputId);
+        lockStates[inputId] = !lockStates[inputId];
+        inputElement.readOnly = lockStates[inputId];
+        buttonElement.innerText = lockStates[inputId] ? '🔒' : '🔓';
+        inputElement.classList.toggle('locked', lockStates[inputId]);
+        ajustarColuna(prodIndex);
+    }
+
+    function ajustarColuna(prodIndex) {
+        const produto = produtos[prodIndex];
+        let totalConsumidoTravado = 0;
+        let elementosDestravados = [];
+        for (let i = 0; i < pessoas.length; i++) {
+            const id = `consumo-p${i}-i${prodIndex}`;
+            const el = document.getElementById(id);
+            if (lockStates[id]) {
+                const valorTravado = parseFloat(el.value.replace(',', '.')) || 0;
+                totalConsumidoTravado += (modoConsumoAtual === 'item') ? valorTravado : (valorTravado / produto.precoUnitario);
+            } else {
+                elementosDestravados.push(el);
+            }
+        }
+        const qtdTotal = produto.quantidade;
+        const qtdRestante = qtdTotal - totalConsumidoTravado;
+        if (elementosDestravados.length > 0) {
+            const qtdBasePorPessoa = Math.floor((qtdRestante / elementosDestravados.length) * 100) / 100;
+            let erroArredondamento = Math.round((qtdRestante - (qtdBasePorPessoa * elementosDestravados.length)) * 100);
+            elementosDestravados.forEach((el) => {
+                let qtdFinal = qtdBasePorPessoa;
+                if (erroArredondamento > 0) {
+                    qtdFinal += 0.01;
+                    erroArredondamento--;
+                }
+                const valorExibido = (modoConsumoAtual === 'item') ? qtdFinal : (qtdFinal * produto.precoUnitario);
+                el.value = valorExibido.toFixed(2);
+            });
+        }
+        atualizarSubtotaisModal();
+    }
+
+    function trocarModoConsumo(novoModo) {
+        modoConsumoAtual = novoModo;
+        abrirModalConsumo(true);
+    }
+
+    function abrirModalConsumo(reconstruindo = false) {
+        if (!reconstruindo) {
+            modoConsumoAtual = 'item'; document.querySelector('input[name="modoConsumoInterno"][value="item"]').checked = true;
+            if (Object.keys(ultimoConsumo).length === 0) {
+                resetarMemoria();
+                produtos.forEach((prod, prodIndex) => {
+                    const qtdPorPessoa = prod.quantidade / pessoas.length;
+                    pessoas.forEach((p, pIndex) => {
+                        const inputId = `consumo-p${pIndex}-i${prodIndex}`;
+                        ultimoConsumo[inputId] = qtdPorPessoa;
+                    });
+                });
+            }
+        }
+        const matrizDiv = document.getElementById('matrizConsumo');
+        let tableHTML = '<table><thead><tr><th>Pessoa</th>';
+        produtos.forEach((p, i) => {
+            const totalItemValor = (p.quantidade * p.precoUnitario).toFixed(2);
+            const headerText = (modoConsumoAtual === 'item') ? `Item ${i+1}: ${p.nome}<br>(Qtd: ${p.quantidade})` : `Item ${i+1}: ${p.nome}<br>(Total: R$ ${totalItemValor})`;
+            tableHTML += `<th>${headerText}</th>`;
+        });
+        tableHTML += `<th class="subtotal-col">Subtotal</th></tr></thead><tbody>`;
+        pessoas.forEach((pessoa, pIndex) => {
+            tableHTML += `<tr><td><strong>${pessoa.nome}</strong></td>`;
+            produtos.forEach((produto, prodIndex) => {
+                const inputId = `consumo-p${pIndex}-i${prodIndex}`;
+                const isLocked = lockStates[inputId] || false;
+                const qtdBase = ultimoConsumo[inputId] || 0;
+                let valorInput, max, step;
+                if (modoConsumoAtual === 'item') { valorInput = qtdBase; max = produto.quantidade; step = 0.01; } 
+                else { valorInput = qtdBase * produto.precoUnitario; max = produto.quantidade * produto.precoUnitario; step = 0.01; }
+                tableHTML += `<td><div style="display:flex; align-items:center; justify-content:center; gap: 5px;">
+                                <input type="number" id="${inputId}" min="0" max="${max.toFixed(2)}" step="${step}" value="${valorInput.toFixed(2)}" oninput="atualizarSubtotaisModal()" class="${isLocked ? 'locked' : ''}" ${isLocked ? 'readonly' : ''}>
+                                <button class="lock-btn" onclick="toggleLock(this, ${pIndex}, ${prodIndex})">${isLocked ? '🔒' : '🔓'}</button>
+                              </div></td>`;
+            });
+            tableHTML += `<td class="subtotal-col" id="subtotal-p${pIndex}">R$ 0.00</td></tr>`;
+        });
+        tableHTML += `</tbody><tfoot><tr>
+                            <td colspan="${produtos.length + 1}" style="text-align: right;">TOTAL DA MESA:</td>
+                            <td id="mesa-subtotal-geral" class="subtotal-col">R$ 0.00</td>
+                        </tr></tfoot>`;
+        tableHTML += '</table>';
+        matrizDiv.innerHTML = tableHTML;
+        document.getElementById('modalConsumo').style.display = 'block';
+        atualizarSubtotaisModal();
+    }
+
+    function atualizarSubtotaisModal() {
+        let totalDaMesa = 0;
+        pessoas.forEach((pessoa, pIndex) => {
+            let subtotalPessoa = 0;
+            produtos.forEach((produto, prodIndex) => {
+                const input = document.getElementById(`consumo-p${pIndex}-i${prodIndex}`);
+                const valorInput = parseFloat(input.value.replace(',', '.')) || 0;
+                subtotalPessoa += (modoConsumoAtual === 'item') ? (valorInput * produto.precoUnitario) : valorInput;
+            });
+            document.getElementById(`subtotal-p${pIndex}`).innerText = `R$ ${subtotalPessoa.toFixed(2)}`;
+            totalDaMesa += subtotalPessoa;
+        });
+        const totalGeralElement = document.getElementById('mesa-subtotal-geral');
+        if (totalGeralElement) { totalGeralElement.innerText = `R$ ${totalDaMesa.toFixed(2)}`; }
+    }
+
+    function fecharModalConsumo() { document.getElementById('modalConsumo').style.display = 'none'; }
+
+    // --- GRUPO 5: LÓGICA DE CÁLCULO E RESULTADO FINAL ---
+    function calcularDivisao() {
+        if (produtos.length === 0 || pessoas.length === 0) { alert("Adicione produtos e pessoas antes de calcular!"); return; }
+        const modo = document.getElementById('modoDivisao').value;
+        if (modo === 'consumo') { abrirModalConsumo(); return; }
+        
+        const incluirTaxa = document.getElementById('taxaServico').checked;
+        const outrasTaxas = parseFloat(document.getElementById('outrasTaxas').value) || 0;
+        const subtotal = produtos.reduce((acc, p) => acc + (p.quantidade * p.precoUnitario), 0);
+        const taxaServicoValor = incluirTaxa ? subtotal * 0.10 : 0;
+        const totalGeral = subtotal + taxaServicoValor + outrasTaxas;
+        const outrasTaxasPorPessoa = outrasTaxas / pessoas.length;
+        let divisaoDetalhada = [];
+
+        if (modo === 'igual') {
+            const subtotalPorPessoa = subtotal / pessoas.length;
+            pessoas.forEach(p => { 
+                const taxaServicoPessoa = incluirTaxa ? subtotalPorPessoa * 0.10 : 0;
+                const valorFinal = subtotalPorPessoa + taxaServicoPessoa + outrasTaxasPorPessoa;
+                divisaoDetalhada.push({ nome: p.nome, subtotal: subtotalPorPessoa, valorFinal, itens: [] }); 
+            });
+        } else if (modo === 'percentual') {
+            let percentuais = []; let somaPercentuais = 0;
+            while (Math.abs(somaPercentuais - 100) > 0.01) {
+                percentuais = []; somaPercentuais = 0;
+                for (const pessoa of pessoas) {
+                    const pStr = prompt(`Qual a porcentagem de ${pessoa.nome}?`); if (pStr === null) { alert("Cálculo cancelado."); return; }
+                    const p = parseFloat(pStr.replace(',', '.')); if (isNaN(p)) { alert("Valor inválido."); somaPercentuais = -1; break; }
+                    percentuais.push(p); somaPercentuais += p;
+                }
+                if (somaPercentuais !== -1 && Math.abs(somaPercentuais - 100) > 0.01) { alert(`A soma das porcentagens (${somaPercentuais}%) é diferente de 100.`); }
+            }
+            if (somaPercentuais === -1) return;
+            pessoas.forEach((p, i) => {
+                const subtotalPessoa = (percentuais[i] / 100) * subtotal;
+                const taxaServicoPessoa = incluirTaxa ? subtotalPessoa * 0.10 : 0;
+                const valorFinal = subtotalPessoa + taxaServicoPessoa + outrasTaxasPorPessoa;
+                divisaoDetalhada.push({ nome: p.nome, subtotal: subtotalPessoa, valorFinal, itens: [] });
+            });
+        }
+        exibirResultadoFinal(subtotal, taxaServicoValor, outrasTaxas, totalGeral, divisaoDetalhada);
+    }
+
+    function processarDivisaoPorConsumo() {
+        for (let i = 0; i < produtos.length; i++) {
+            let somaColuna = 0; const produto = produtos[i];
+            for (let j = 0; j < pessoas.length; j++) {
+                const input = document.getElementById(`consumo-p${j}-i${i}`);
+                const valor = parseFloat(input.value.replace(',', '.')) || 0;
+                somaColuna += (modoConsumoAtual === 'item') ? valor : (valor / produto.precoUnitario);
+            }
+            if (Math.abs(somaColuna - produto.quantidade) > 0.01) {
+                alert(`A coluna do item "${produto.nome}" não está balanceada. A soma é ${somaColuna.toFixed(2)} mas o total é ${produto.quantidade}.\n\nUse as travas 🔒 para ajustar a coluna antes de confirmar.`);
+                return;
+            }
+        }
+        resetarMemoria();
+        for (let i = 0; i < produtos.length; i++) {
+            for (let j = 0; j < pessoas.length; j++) {
+                const inputId = `consumo-p${j}-i${i}`; const input = document.getElementById(inputId); const valorConsumoInput = parseFloat(input.value.replace(',', '.'));
+                const qtdConsumida = (modoConsumoAtual === 'item') ? valorConsumoInput : (valorConsumoInput / produtos[i].precoUnitario);
+                ultimoConsumo[inputId] = qtdConsumida;
+            }
+        }
+        const incluirTaxa = document.getElementById('taxaServico').checked;
+        const outrasTaxas = parseFloat(document.getElementById('outrasTaxas').value) || 0;
+        const outrasTaxasPorPessoa = outrasTaxas / pessoas.length;
+        let subtotalGeral = 0; let divisaoDetalhada = [];
+        pessoas.forEach((pessoa, pIndex) => {
+            let subtotalPessoa = 0; let itensConsumidos = [];
+            produtos.forEach((produto, prodIndex) => {
+                const quantidadeConsumida = ultimoConsumo[`consumo-p${pIndex}-i${prodIndex}`] || 0;
+                if (quantidadeConsumida > 0) {
+                    const valorItem = quantidadeConsumida * produto.precoUnitario;
+                    subtotalPessoa += valorItem;
+                    itensConsumidos.push({ texto: `${quantidadeConsumida.toFixed(2).replace('.',',')}x ${produto.nome}`, valor: valorItem });
+                }
+            });
+            subtotalGeral += subtotalPessoa;
+            const taxaServicoPessoa = incluirTaxa ? subtotalPessoa * 0.10 : 0;
+            const valorFinalPessoa = subtotalPessoa + taxaServicoPessoa + outrasTaxasPorPessoa;
+            divisaoDetalhada.push({ nome: pessoa.nome, subtotal: subtotalPessoa, valorFinal: valorFinalPessoa, itens: itensConsumidos });
+        });
+        const taxaServicoTotal = incluirTaxa ? subtotalGeral * 0.10 : 0;
+        const totalGeral = subtotalGeral + taxaServicoTotal + outrasTaxas;
+        exibirResultadoFinal(subtotalGeral, taxaServicoTotal, outrasTaxas, totalGeral, divisaoDetalhada);
+        fecharModal('modalConsumo');
+    }
+    
+    function exibirResultadoFinal(subtotal, taxaServico, outrasTaxas, total, divisaoDetalhada) {
+        const incluirTaxa = document.getElementById('taxaServico').checked;
+        let textoParaCopiar = `*Resumo da Conta do Buteco*\n\nSubtotal Produtos: R$ ${subtotal.toFixed(2)}\n`;
+        if (taxaServico > 0) textoParaCopiar += `Taxa de Serviço (10%): R$ ${taxaServico.toFixed(2)}\n`;
+        if (outrasTaxas > 0) textoParaCopiar += `Outras Taxas: R$ ${outrasTaxas.toFixed(2)}\n`;
+        textoParaCopiar += `*Total Geral: R$ ${total.toFixed(2)}*\n---------------------\n`;
+        
+        let resumoHtml = `<div style="border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-bottom: 10px;">
+                            Subtotal dos Produtos: R$ ${subtotal.toFixed(2)}<br>`;
+        if (taxaServico > 0) { resumoHtml += `Taxa de Serviço (10%): R$ ${taxaServico.toFixed(2)}<br>`; }
+        if (outrasTaxas > 0) { resumoHtml += `Outras Taxas: R$ ${outrasTaxas.toFixed(2)}<br>`; }
+        resumoHtml += `<strong style="font-size: 1.2em; color: var(--primary-dark);">Total Geral da Conta: R$ ${total.toFixed(2)}</strong></div>`;
+        let detalheHtml = ''; let somaPagamentos = 0;
+        divisaoDetalhada.forEach(pessoa => {
+            somaPagamentos += pessoa.valorFinal;
+            detalheHtml += `<p><strong>${pessoa.nome}</strong> paga <strong>R$ ${pessoa.valorFinal.toFixed(2)}</strong></p>`;
+            textoParaCopiar += `\n*${pessoa.nome}* paga *R$ ${pessoa.valorFinal.toFixed(2)}*\n`;
+            
+            if (pessoa.itens && pessoa.itens.length > 0) {
+                detalheHtml += `<ul>`;
+                pessoa.itens.forEach(item => {
+                    detalheHtml += `<li>${item.texto} = R$ ${item.valor.toFixed(2)}</li>`;
+                    textoParaCopiar += `  - ${item.texto} = R$ ${item.valor.toFixed(2)}\n`;
+                });
+                if (incluirTaxa && pessoa.subtotal > 0) {
+                    const taxaPessoa = pessoa.subtotal * 0.10;
+                    detalheHtml += `<li style="color: #555;">Sua parte da Taxa de Serviço: R$ ${taxaPessoa.toFixed(2)}</li>`;
+                    textoParaCopiar += `  - Sua parte da Taxa de Serviço: R$ ${taxaPessoa.toFixed(2)}\n`;
+                }
+                if (outrasTaxas > 0) {
+                    const outrasTaxasPessoa = outrasTaxas / pessoas.length;
+                    detalheHtml += `<li style="color: #555;">Sua parte de Outras Taxas: R$ ${outrasTaxasPessoa.toFixed(2)}</li>`;
+                    textoParaCopiar += `  - Sua parte de Outras Taxas: R$ ${outrasTaxasPessoa.toFixed(2)}\n`;
+                }
+                detalheHtml += `</ul>`;
+            }
+        });
+        const confirmacaoHtml = `<hr><div style="text-align:right; margin-top:10px; font-size: 1.1em;">
+                                  <strong>Soma da divisão: R$ ${somaPagamentos.toFixed(2)}</strong></div>`;
+        const botaoCopiarHtml = `<br><button class="button blue" onclick='copiarResultado(${JSON.stringify(textoParaCopiar)})'>📋 Copiar Resultado para Partilhar</button>`;
+        document.getElementById('resultado').innerHTML = resumoHtml + detalheHtml + confirmacaoHtml + botaoCopiarHtml;
+    }
+
+    function copiarResultado(texto) {
+        navigator.clipboard.writeText(texto).then(() => {
+            alert('Resultado copiado para a área de transferência!\n\nAgora é só colar no seu app de mensagens.');
+        }, () => { alert('Falha ao copiar o resultado.'); });
+    }
   </script>
 </body>
 </html>
