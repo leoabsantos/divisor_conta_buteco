@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Divisor de Conta Buteco - Online</title>
+  <style>
+    :root {
+        --primary-color: #0077cc;
+        --primary-dark: #005a9e;
+        --light-bg: #f4f6fa;
+        --white: #ffffff;
+        --gray-light: #f0f0f0;
+        --gray-dark: #6c757d;
+        --text-color: #333;
+        --danger-color: #dc3545;
+    }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--light-bg); margin: 0; padding: 20px; color: var(--text-color); }
+    .container { max-width: 800px; margin: auto; background: var(--white); border-radius: 16px; padding: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+    h1, h2 { text-align: center; color: var(--primary-color); margin-bottom: 10px; }
+    .button { padding: 15px; border: none; border-radius: 12px; font-size: 16px; color: var(--white); cursor: pointer; font-weight: bold; margin: 5px 0; transition: background-color 0.2s, filter 0.2s; text-align: center; }
+    .button:hover { filter: brightness(110%); }
+    .yellow { background: #f7c948; } .red { background: #f95f62; } .green { background: #3ecf8e; } .blue { background: #3291ff; } .orange { background: #ff6b35; } .teal { background: #06b6d4; } .pink { background: #f472b6; } .gray { background: var(--gray-dark); }
+    input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+    .section-title { margin: 20px 0 10px; font-weight: bold; color: #444; border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+    .total { font-size: 16px; text-align: left; margin-top: 20px; font-weight: 500; color: var(--text-color); background: #eef7ff; padding: 15px; border-radius: 12px; }
+    .total p { margin: 10px 0 2px 0; }
+    .total ul { padding-left: 25px; margin: 4px 0 10px 0; font-weight: normal; list-style-type: '↳ '; font-size: 0.9em; line-height: 1.4; }
+    .total hr { border: 0; border-top: 1px solid #cce4ff; margin: 10px 0; }
+    .list-item { margin-bottom: 5px; padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .subtotal-produtos { text-align: right; font-size: 1.2em; font-weight: bold; color: var(--primary-dark); margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; }
+    .pessoa-item { background: var(--gray-light); }
+    .grid-categorias { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+    .modal-content { background-color: var(--white); margin: 5% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 16px; animation: slide-down 0.3s ease-out; }
+    @keyframes slide-down { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-content.wide { max-width: 900px; }
+    .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    #login-screen { text-align: center; padding: 40px 20px; }
+    #app-screen { display: none; }
+    #user-info { text-align: right; margin-bottom: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <!-- Ecrã de Login https://console.firebase.google.com/project/divisor-de-conta-boteco/overview ---- project-650578405698 -->
+  <div id="login-screen" class="container">
+    <h1>Bem-vindo ao Divisor de Conta Buteco</h1>
+    <p>Faça login para guardar as suas contas e aceder de qualquer lugar.</p>
+    <button id="login-btn" class="button blue" style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 20px auto; width: 250px;">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" fill="#FFFFFF"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+      <span>Login com Google</span>
+    </button>
+  </div>
+
+  <!-- Ecrã Principal da Aplicação -->
+  <div id="app-screen" class="container">
+    <div id="user-info">
+      <span id="user-name"></span>
+      <button id="logout-btn" class="button red" style="padding: 5px 10px; font-size: 12px; margin-left: 10px;">Sair</button>
+    </div>
+    
+    <h1>Divisão de Conta no Buteco 🍻</h1>
+    <button class="button gray" onclick="limparConta()">🗑️ Limpar Conta e Começar de Novo</button>
+
+    <!-- O resto da aplicação (seções 1, 2, 3, 4, etc.) vai aqui -->
+    <div class="section-title">
+        <span>1. Adicione Itens à Conta</span>
+        <button class="button blue" style="padding: 5px 10px; font-size: 14px;" onclick="abrirModalCadastroProdutos()">⚙️ Gerir Produtos</button>
+    </div>
+    <div class="grid-categorias"></div>
+    <div class="section-title">2. Produtos na Comanda</div>
+    <div id="produtos"></div>
+    <div class="section-title">3. Pessoas na Mesa</div>
+    <div class="grid-categorias">
+      <button class="button pink" onclick="mostrarBotoesRapidos()">1-9 Pessoas</button>
+      <button class="button blue" onclick="abrirModalPessoa()">+ Pessoa com Nome</button>
+    </div>
+    <div id="botoesRapidos" style="margin-top: 10px;"></div>
+    <div id="pessoas"></div>
+    <div class="section-title">4. Opções de Divisão</div>
+    <div class="config-options">
+      <select id="modoDivisao">
+        <option value="igual">Divisão Igual</option>
+        <option value="consumo" selected>Por Consumo (Detalhado)</option>
+        <option value="percentual">Por Percentual (%)</option>
+      </select>
+      <div class="config-item">
+        <input type="checkbox" id="taxaServico" style="width: auto; margin: 0;">
+        <label for="taxaServico">Incluir taxa de serviço (10%)</label>
+      </div>
+      <div class="form-group">
+        <label for="outrasTaxas">Outras Taxas (Couvert, etc.)</label>
+        <input type="number" id="outrasTaxas" placeholder="Ex: 15.00" step="0.01">
+      </div>
+    </div>
+    <button class="button yellow" onclick="calcularDivisao()" style="width: 100%; margin-top: 20px; padding: 20px; font-size: 20px;">🧮 CALCULAR DIVISÃO 🧮</button>
+    <div class="total" id="resultado"></div>
+  </div>
+
+  <!-- MODAIS (código dos modais aqui) -->
+  <div id="modalProduto" class="modal"> <!-- ... --> </div>
+  <div id="modalPessoa" class="modal"> <!-- ... --> </div>
+  <div id="modalCadastroProdutos" class="modal"> <!-- ... --> </div>
+  <div id="modalConsumo" class="modal"> <!-- ... --> </div>
+
+  <!-- Scripts do Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <script>
+    // --- IMPORTANTE: Configuração do Firebase ---
+    // Para obter estas chaves, crie um projeto GRATUITO em https://firebase.google.com/
+    // 1. Crie um projeto.
+    // 2. Vá para "Configurações do projeto" (ícone de engrenagem).
+    // 3. Em "Seus apps", clique no ícone da web (</>) para criar um app da web.
+    // 4. Copie o objeto `firebaseConfig` e cole aqui.
+    const firebaseConfig = {
+    apiKey: "AIzaSyAVXenw-uD-pvNGdZqcU6fvaZeqNiW3qQA",
+    authDomain: "divisor-de-conta-boteco.firebaseapp.com",
+    projectId: "divisor-de-conta-boteco",
+    storageBucket: "divisor-de-conta-boteco.firebasestorage.app",
+    messagingSenderId: "650578405698",
+    appId: "1:650578405698:web:354af978807a76e72140db",
+    measurementId: "G-X2CYSZLNSG"
+    };
+
+    // Inicialização do Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let currentUser = null;
+
+    // --- GRUPO 0: AUTENTICAÇÃO E LÓGICA DE LOGIN ---
+    const loginScreen = document.getElementById('login-screen');
+    const appScreen = document.getElementById('app-screen');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userNameEl = document.getElementById('user-name');
+
+    // Observador de estado de autenticação
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            // Utilizador está logado
+            currentUser = user;
+            loginScreen.style.display = 'none';
+            appScreen.style.display = 'block';
+            userNameEl.textContent = `Olá, ${user.displayName || user.email}!`;
+            carregarDados(); // Carrega os dados do Firestore
+        } else {
+            // Utilizador está desligado
+            currentUser = null;
+            loginScreen.style.display = 'block';
+            appScreen.style.display = 'none';
+            // Limpa os dados da tela
+            produtos = [];
+            pessoas = [];
+            renderProdutos();
+            renderPessoas();
+        }
+    });
+
+    // Evento de clique para login
+    loginBtn.addEventListener('click', () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(error => {
+            console.error("Erro durante o login:", error);
+            alert("Ocorreu um erro ao tentar fazer login. Por favor, tente novamente.");
+        });
+    });
+
+    // Evento de clique para logout
+    logoutBtn.addEventListener('click', () => {
+        auth.signOut();
+    });
+
+    // --- GRUPO 1: PERSISTÊNCIA DE DADOS COM FIRESTORE ---
+    async function salvarDados() {
+        if (!currentUser) return;
+        const userDocRef = db.collection('users').doc(currentUser.uid);
+        try {
+            await userDocRef.set({
+                produtos: produtos,
+                pessoas: pessoas,
+                catalogo: itensPorCategoria
+            }, { merge: true }); // merge: true para não sobrescrever outros campos
+        } catch (error) {
+            console.error("Erro ao guardar dados:", error);
+        }
+    }
+
+    async function carregarDados() {
+        if (!currentUser) return;
+        const userDocRef = db.collection('users').doc(currentUser.uid);
+        try {
+            const doc = await userDocRef.get();
+            if (doc.exists) {
+                const data = doc.data();
+                produtos = data.produtos || [];
+                pessoas = data.pessoas || [];
+                itensPorCategoria = data.catalogo || JSON.parse(JSON.stringify(defaultItens));
+            } else {
+                // Se o utilizador não tem dados, usa os padrões
+                produtos = [];
+                pessoas = [];
+                itensPorCategoria = JSON.parse(JSON.stringify(defaultItens));
+            }
+            renderizarBotoesCategoria();
+            renderProdutos();
+            renderPessoas();
+        } catch (error) {
+            console.error("Erro ao carregar dados:", error);
+        }
+    }
+    
+    // As funções `salvarCatalogo` e `carregarCatalogo` são agora parte de `salvarDados` e `carregarDados`.
+    // A função `limparConta` agora limpa os dados e guarda esse estado vazio.
+    async function limparConta() {
+        if (confirm("Tem certeza que deseja limpar todos os dados da conta? Essa ação não pode ser desfeita.")) {
+            produtos = []; pessoas = []; resetarMemoria();
+            await salvarDados(); // Guarda o estado vazio na nuvem
+            renderProdutos(); renderPessoas(); document.getElementById('resultado').innerHTML = '';
+        }
+    }
+
+    // --- O RESTANTE DO CÓDIGO (GRUPOS 2, 3, 4, 5) PERMANECE O MESMO DA VERSÃO ANTERIOR ---
+    // A única mudança é que `salvarDados()` é chamado no final das funções que modificam os dados,
+    // e ele agora guarda na nuvem em vez de no localStorage.
+    
+    // (Cole aqui o código completo dos Grupos 2, 3, 4 e 5 da resposta anterior)
+    
+  </script>
+</body>
+</html>
